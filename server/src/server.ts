@@ -43,7 +43,7 @@ io.on("connection", (socket: Socket) => {
     });
 
     try {
-      await page.goto(`http://${url}`);
+      await page.goto(url);
     } catch (error) {
       if (error instanceof Error) throw new Error(error.message);
     }
