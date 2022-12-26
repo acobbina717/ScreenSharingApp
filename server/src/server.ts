@@ -14,7 +14,7 @@ const httpServer = http.createServer(app);
 // Configure cors to give client access socket
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:3000"],
+    origin: ["http://localhost:5174"],
     credentials: true,
   },
 });

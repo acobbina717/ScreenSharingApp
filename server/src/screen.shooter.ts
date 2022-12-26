@@ -1,9 +1,15 @@
 import { Socket } from "socket.io";
 import { CDPSession, Page } from "puppeteer";
 
+type ScreenShotFormat = {
+  format: "jpeg" | "png" | undefined;
+  quality: number;
+  everyNthFrame: number;
+};
+
 const emptyFunction = async () => {};
-const defaultAfterWritingNewFile = async (fileName: boolean) =>
-  console.log(`${fileName} was written`);
+const defaultAfterWritingNewFile = async (filename: boolean) =>
+  console.log(`${filename} was written`);
 
 export class PuppeteerMassScreenshots {
   page: Page;
@@ -11,46 +17,51 @@ export class PuppeteerMassScreenshots {
   client: CDPSession;
   canScreenshot: boolean;
 
+  /*
+    page - represents the web page
+    socket - Socket.io
+    options - Chrome DevTools configurations
+    */
   async init(page: Page, socket: Socket, options = {}) {
-    // page - represents the web page
-    // socket - Socket.io
-    // options - Chrome DevTools config
-
     const runOptions = {
+      //👇🏻 Their values must be asynchronous codes
       beforeWritingImageFile: emptyFunction,
       afterWritingImageFile: defaultAfterWritingNewFile,
       beforeAck: emptyFunction,
       afterAck: emptyFunction,
       ...options,
     };
-
     this.socket = socket;
     this.page = page;
 
-    // CDPSession instance is used to talk to Chrome DevTools Protocal
+    //👇🏻 CDPSession instance is used to talk raw Chrome Devtools Protocol
     this.client = await this.page.target().createCDPSession();
     this.canScreenshot = true;
 
-    // The frameObject param contains the compressed image data
-    // requested by Page.startScreencast.
+    //👇🏻 The frameObject parameter contains the compressed image data
+    //   requested by the Page.startScreencast.
     this.client.on("Page.screencastFrame", async (frameObject) => {
       if (this.canScreenshot) {
         await runOptions.beforeWritingImageFile();
-        const fileName = await this.writeImageFilename(frameObject.data);
-        await runOptions.afterWritingImageFile(fileName as unknown as boolean);
+        const filename = await this.writeImageFilename(frameObject.data);
+        await runOptions.afterWritingImageFile(filename);
 
         try {
           await runOptions.beforeAck();
+          /*👇🏻 acknowledges that a screencast frame  (image) has been received by the frontend.
+                    The sessionId - represents the frame number
+                    */
           await this.client.send("Page.screencastFrameAck", {
             sessionId: frameObject.sessionId,
           });
           await runOptions.afterAck();
-        } catch (error) {
+        } catch (e) {
           this.canScreenshot = false;
         }
       }
     });
   }
+
   async writeImageFilename(data: string) {
     const fullHeight = await this.page.evaluate(() => {
       return Math.max(
@@ -62,43 +73,30 @@ export class PuppeteerMassScreenshots {
         document.documentElement.clientHeight
       );
     });
-    // Emits event containing the image and its full height
+    //Sends an event containing the image and its full height
     return this.socket.emit("image", { img: data, fullHeight });
   }
-
   /*
-   The start(options) function specifies the properties of the screencast
-   format
-   quality
-   everyNthFrame - specifies the number of frames to ignore before taking the next screenshot
-   */
-
+    The startOptions specify the properties of the screencast
+    👉🏻 format - the file type (Allowed fomats: 'jpeg' or 'png')
+    👉🏻 quality - sets the image quality (default is 100)
+    👉🏻 everyNthFrame - specifies the number of frames to ignore before taking the next screenshots. (The more frames we ignore, the less screenshots we will have)
+    */
   async start(options = {}) {
-    type ScreenShotFormat = {
-      format: "jpeg" | "png" | undefined;
-      quality: number;
-      everyNthFrame: number;
-    };
-
     const startOptions: ScreenShotFormat = {
       format: "jpeg",
       quality: 10,
       everyNthFrame: 1,
       ...options,
     };
-
     try {
-      await this.client.send("Page.startScreencast", startOptions);
-    } catch (error) {
-      if (error instanceof Error) throw new Error(error.message);
-    }
+      await this.client?.send("Page.startScreencast", startOptions);
+    } catch (err) {}
   }
 
   async stop() {
     try {
-      await this.client.send("Page.stopScreencast");
-    } catch (error) {
-      if (error instanceof Error) throw new Error(error.message);
-    }
+      await this.client?.send("Page.stopScreencast");
+    } catch (err) {}
   }
 }
