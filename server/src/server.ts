@@ -3,6 +3,7 @@ import http from "http";
 import cors from "cors";
 import { Server, Socket } from "socket.io";
 import puppeteer from "puppeteer";
+import { PuppeteerMassScreenshots } from "./screen.shooter";
 
 const app = express();
 const PORT = 4000;
@@ -46,6 +47,25 @@ io.on("connection", (socket: Socket) => {
     } catch (error) {
       if (error instanceof Error) throw new Error(error.message);
     }
+
+    const screenShots = new PuppeteerMassScreenshots();
+    await screenShots.init(page, socket);
+    await screenShots.start();
+
+    socket.on("mouseClick", async ({ x, y }) => {
+      try {
+        await page.mouse.click(x, y);
+        console.log("MouseMove", page.mouse);
+      } catch (error) {
+        if (error instanceof Error) throw new Error(error.message);
+      }
+    });
+
+    socket.on("scroll", ({ position }) => {
+      page.evaluate((top) => {
+        window.scrollTo({ top });
+      }, position);
+    });
   });
 
   socket.on("disconnect", () => {
