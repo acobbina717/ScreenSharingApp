@@ -1,8 +1,8 @@
-import express from "express";
 import http from "http";
 import cors from "cors";
-import { Server, Socket } from "socket.io";
+import express from "express";
 import puppeteer from "puppeteer";
+import { Server, Socket } from "socket.io";
 import { PuppeteerMassScreenshots } from "./screen.shooter";
 
 const app = express();
@@ -15,7 +15,7 @@ const httpServer = http.createServer(app);
 // Configure cors to give client access socket
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5174"],
+    origin: "*",
     credentials: true,
   },
 });
@@ -25,7 +25,6 @@ app.use(express.json());
 
 // Configure express app to use cors
 app.use(cors());
-
 // socketIO Events
 io.on("connection", (socket: Socket) => {
   console.log(`⚡️: ${socket.id} user just connected!`);
