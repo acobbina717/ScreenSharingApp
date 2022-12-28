@@ -85,8 +85,8 @@ export class PuppeteerMassScreenshots {
     */
   async start(options = {}) {
     const startOptions: ScreenShotFormat = {
-      format: "jpeg",
-      quality: 10,
+      format: "png",
+      quality: 40,
       everyNthFrame: 1,
       ...options,
     };

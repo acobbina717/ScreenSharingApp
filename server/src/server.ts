@@ -42,7 +42,7 @@ io.on("connection", (socket: Socket) => {
     });
 
     try {
-      await page.goto(url);
+      await page.goto(url, { waitUntil: "load" });
       const screenShots = new PuppeteerMassScreenshots();
       await screenShots.init(page, socket);
       await screenShots.start();
@@ -62,9 +62,10 @@ io.on("connection", (socket: Socket) => {
         const cur = await page.evaluate(
           (p) => {
             const elementFromPoint = document.elementFromPoint(p.x, p.y);
-            return window
-              .getComputedStyle(elementFromPoint as Element, null)
-              .getPropertyValue("cursor");
+            if (elementFromPoint)
+              return window
+                .getComputedStyle(elementFromPoint, null)
+                .getPropertyValue("cursor");
           },
           { x, y }
         );
@@ -78,7 +79,12 @@ io.on("connection", (socket: Socket) => {
 
     socket.on("mouseClick", async ({ x, y }) => {
       try {
-        await page.mouse.click(x, y);
+        await Promise.all([
+          page.waitForNavigation({
+            waitUntil: ["load", "networkidle0"],
+          }),
+          page.mouse.click(x, y),
+        ]);
       } catch (error) {
         if (error instanceof Error) throw new Error(error.message);
       }
