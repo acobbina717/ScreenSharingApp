@@ -51,7 +51,7 @@ body {
 }
 .form__input {
   width: 70%;
-  padding: 10px 15px;
+  padding: 10px 0px;
   margin: 10px 0;
 }
 .popup {

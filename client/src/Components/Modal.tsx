@@ -19,6 +19,8 @@ const Modal = ({ url }: Props) => {
   const [cursor, setCursor] = useState("");
   const [fullHeight, setFullHeight] = useState("");
 
+  console.log("Modal", url);
+
   useEffect(() => {
     socket.emit("browse", {
       url,
@@ -42,7 +44,7 @@ const Modal = ({ url }: Props) => {
 
   const mouseMove = useCallback((event: MouseEvent<Element>) => {
     const position = event.currentTarget.getBoundingClientRect();
-    console.log(position);
+    // console.log(position);
     const widthChange = 1255 / position.width;
     const heightChange = 800 / position.height;
 

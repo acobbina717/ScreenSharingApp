@@ -8,8 +8,9 @@ type ScreenShotFormat = {
 };
 
 const emptyFunction = async () => {};
-const defaultAfterWritingNewFile = async (filename: boolean) =>
-  console.log(`${filename} was written`);
+const defaultAfterWritingNewFile = async (filename: boolean) => {
+  return;
+};
 
 export class PuppeteerMassScreenshots {
   page: Page;

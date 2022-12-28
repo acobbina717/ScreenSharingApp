@@ -43,18 +43,42 @@ io.on("connection", (socket: Socket) => {
 
     try {
       await page.goto(url);
+      const screenShots = new PuppeteerMassScreenshots();
+      await screenShots.init(page, socket);
+      await screenShots.start();
     } catch (error) {
       if (error instanceof Error) throw new Error(error.message);
     }
 
-    const screenShots = new PuppeteerMassScreenshots();
-    await screenShots.init(page, socket);
-    await screenShots.start();
+    socket.on("mouseMove", async ({ x, y }) => {
+      try {
+        //sets the cursor the position with Puppeteer
+        await page.mouse.move(x, y);
+        /*
+            👇🏻 This function runs within the page's context, 
+               calculates the element position from the view point 
+               and returns the CSS style for the element.
+            */
+        const cur = await page.evaluate(
+          (p) => {
+            const elementFromPoint = document.elementFromPoint(p.x, p.y);
+            return window
+              .getComputedStyle(elementFromPoint as Element, null)
+              .getPropertyValue("cursor");
+          },
+          { x, y }
+        );
+
+        //👇🏻 sends the CSS styling to the frontend
+        socket.emit("cursor", cur);
+      } catch (error) {
+        if (error instanceof Error) throw new Error(error.message);
+      }
+    });
 
     socket.on("mouseClick", async ({ x, y }) => {
       try {
         await page.mouse.click(x, y);
-        console.log("MouseMove", page.mouse);
       } catch (error) {
         if (error instanceof Error) throw new Error(error.message);
       }
